@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
 
-x_data = np.random.rand(50000, 2) * 0.6 + 0.2
-y_data = x_data[:,:1] * x_data[:, 1:2]
+x_data = np.random.rand(50000, 2) * 0.5
+y_data = x_data[:,:1] + x_data[:, 1:2]
 
-x_test = np.random.rand(5000, 2) * 0.6 + 0.2
-y_test = x_test[:,:1] * x_test[:,1:2]
+x_test = np.random.rand(5000, 2) * 0.5
+y_test = x_test[:,:1] + x_test[:,1:2]
 
 X = tf.placeholder(tf.float32)
 Y = tf.placeholder(tf.float32)
@@ -31,14 +31,14 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for step in range(400001):
 #        x_data = np.concatenate((x_data, np.random.rand(256, 2)), axis=0)
-        x_data[0:256] = np.random.rand(256, 2) * 0.6 + 0.2
-        y_data = x_data[:,:1] * x_data[:, 1:2]
+        x_data[0:256] = np.random.rand(256, 2) * 0.5
+        y_data = x_data[:,:1] + x_data[:, 1:2]
 
         sess.run(train, feed_dict={X: x_data, Y: y_data})
         if step % 250 == 0:
             print(step, sess.run(cost, feed_dict={X:x_data, Y:y_data}), sess.run(accuracy, feed_dict={X:x_test, Y:y_test}))
 
-    x_test = np.random.rand(5000, 2)
-    y_test = x_test[:,:1] * x_test[:,1:2]
+    x_test = np.random.rand(5000, 2) * 0.5
+    y_test = x_test[:,:1] + x_test[:,1:2]
     h, a = sess.run([hypothesis, accuracy], feed_dict={X:x_test, Y:y_test})
     print("\nHypothesis: ", h , "\ny_value", y_test, "\nAccuracy: ", a)
