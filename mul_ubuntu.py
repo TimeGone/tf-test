@@ -56,8 +56,9 @@ with tf.Session() as sess:
 
         _, summary = sess.run([train, merged], feed_dict={X: x_data, Y: y_data})
         if step % 250 == 0:
-            train_writer.add_summary(summary, step)
             print(step, sess.run([loss, grads_and_vars[1]], feed_dict={X:x_data, Y:y_data}), sess.run([relative_bias, accuracy], feed_dict={X:x_test, Y:y_test}))
+            if step >= 5000:
+                train_writer.add_summary(summary, step)
 
     x_test = np.random.rand(5000, 2) * 0.1
     y_test = x_test[:,:1] * x_test[:,1:2] 
