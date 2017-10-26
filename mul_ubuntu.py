@@ -4,12 +4,15 @@ import numpy as np
 def swish(x):
     return  x * tf.nn.sigmoid(x)
 
+def forfan(x):
+    return x * tf.nn.tanh(x)
+
 summaries_dir = '/tmp/mul_ubuntu'
 
 activator = tf.nn.tanh
 optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
-x_data = np.random.rand(1024, 2)
+x_data = np.random.rand(65536, 2)
 y_data = x_data[:,:1] * x_data[:, 1:2]
 
 x_test = np.random.rand(8192, 2)
@@ -19,22 +22,24 @@ X = tf.placeholder(tf.float32)
 Y = tf.placeholder(tf.float32)
 training = tf.placeholder(tf.bool, name='training')
 
-W1 = tf.Variable(tf.random_normal([2, 50]), name='weight1')
-b1 = tf.Variable(tf.random_normal([50]), name='bias1')
-layer1 = activator(tf.matmul(X, W1) + b1)
-layer1 = tf.contrib.layers.batch_norm(layer1, is_training=training, fused=True)
+W1 = tf.Variable(tf.random_normal([2, 200]), name='weight1')
+b1 = tf.Variable(tf.random_normal([200]), name='bias1')
+h1 = tf.matmul(X, W1) + b1
+layer1 = activator(h1)
+# layer1 = activator(tf.contrib.layers.batch_norm(h1, is_training=training, fused=True))
 # tf.summary.histogram('W1', W1)
 # tf.summary.histogram('b1', b1)
 
-W2 = tf.Variable(tf.random_normal([50, 25]), name='weight2')
-b2 = tf.Variable(tf.random_normal([25]), name='bias2')
-layer2 = activator(tf.matmul(layer1, W2) + b2)
-layer2 = tf.contrib.layers.batch_norm(layer2, is_training=training, fused=True)
+W2 = tf.Variable(tf.random_normal([200, 100]), name='weight2')
+b2 = tf.Variable(tf.random_normal([100]), name='bias2')
+h2 = tf.matmul(layer1, W2) + b2
+layer2 = activator(h2)
+# layer2 = activator(tf.contrib.layers.batch_norm(h2, is_training=training, fused=True))
 # hypothesis = tf.matmul(layer1, W2) + b2
 # tf.summary.histogram('W2', W2)
 # tf.summary.histogram('b2', b2)
 
-W3 = tf.Variable(tf.random_normal([25, 1]), name='weight3')
+W3 = tf.Variable(tf.random_normal([100, 1]), name='weight3')
 b3 = tf.Variable(tf.random_normal([1]), name='bias3')
 hypothesis = tf.matmul(layer2, W3) + b3
 # tf.summary.histogram('W3', W3)
