@@ -27,6 +27,7 @@ b1 = tf.Variable(tf.random_normal([200]), name='bias1')
 h1 = tf.matmul(X, W1) + b1
 layer1 = activator(h1)
 # layer1 = activator(tf.contrib.layers.batch_norm(h1, is_training=training, fused=True))
+tf.summary.histogram('layer1', layer1)
 # tf.summary.histogram('W1', W1)
 # tf.summary.histogram('b1', b1)
 
@@ -35,6 +36,7 @@ b2 = tf.Variable(tf.random_normal([100]), name='bias2')
 h2 = tf.matmul(layer1, W2) + b2
 layer2 = activator(h2)
 # layer2 = activator(tf.contrib.layers.batch_norm(h2, is_training=training, fused=True))
+tf.summary.histogram('layer2', layer2)
 # hypothesis = tf.matmul(layer1, W2) + b2
 # tf.summary.histogram('W2', W2)
 # tf.summary.histogram('b2', b2)
