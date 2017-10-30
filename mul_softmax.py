@@ -7,30 +7,35 @@ def swish(x):
 def forfan(x):
     return x * tf.nn.tanh(x)
 
-def get_label(value, class_num):
-    labels = np.zeros((value.shape[0], class_num))
-    indexs = (value * class_num).astype(int)
+def get_label_index(value, num_classes):
+    indexs = (value * num_classes).astype(int)
+    return indexs[:,0]
+
+def get_label(value, num_classes):
+    labels = np.zeros((value.shape[0], num_classes))
+    indexs = (value * num_classes).astype(int)
     indexs = indexs[:,0]
     labels[range(value.shape[0]), indexs] = 1
     return labels
 
 summaries_dir = '/tmp/mul_ubuntu'
 
-activator = swish
-optimizer = tf.train.AdamOptimizer(learning_rate=0.00001)
+activator = tf.nn.relu
+optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
+num_clips = 10
 
-x_data = np.random.rand(5000, 2)
-y_data = x_data[:,:1] * x_data[:, 1:2]
-y_label_data = get_label(y_data, 100)
+# x_data = np.random.rand(5000, 2)
+# y_data = x_data[:,:1] * x_data[:, 1:2]
+# y_label_data = get_label(y_data, num_clips)
 # print(y_data)
 # print(y_label_data)
 
 x_test = np.random.rand(8192, 2)
 y_test = x_test[:,:1] * x_test[:,1:2]
-y_label_test = get_label(y_test, 100)
+y_label_test = get_label(y_test, num_clips)
 
 X = tf.placeholder(tf.float32)
-Y_label = tf.placeholder(tf.float32)
+Y_label = tf.placeholder(tf.float32, [None, num_clips])
 training = tf.placeholder(tf.bool, name='training')
 
 W1 = tf.Variable(tf.random_normal([2, 200]), name='weight1')
@@ -40,18 +45,19 @@ layer1 = activator(h1)
 # layer1 = activator(tf.contrib.layers.batch_norm(h1, is_training=training, fused=True))
 # tf.summary.histogram('layer1', layer1)
 
-W2 = tf.Variable(tf.random_normal([200, 100]), name='weight2')
-b2 = tf.Variable(tf.random_normal([100]), name='bias2')
+W2 = tf.Variable(tf.random_normal([200, num_clips]), name='weight2')
+b2 = tf.Variable(tf.random_normal([num_clips]), name='bias2')
 h2 = tf.matmul(layer1, W2) + b2
-predict = tf.nn.softmax(h2)
+predicts = tf.nn.softmax(h2)
 # layer2 = activator(tf.contrib.layers.batch_norm(h2, is_training=training, fused=True))
-# tf.summary.histogram('predict', predict)
+# tf.summary.histogram('predicts', predicts)
 
-correct = tf.equal(tf.argmax(predict), tf.argmax(Y_label))
+correct = tf.equal(tf.argmax(predicts), tf.argmax(Y_label))
 accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32))
 tf.summary.scalar('accuracy', accuracy)
 # loss = tf.reduce_sum(tf.square(tf.subtract(hypothesis, Y)))
-loss = -tf.reduce_sum(Y_label * tf.log(predict))
+# loss = -tf.reduce_sum(Y_label * tf.log(predicts))
+loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits=h2, labels=Y_label))
 tf.summary.scalar('loss', loss)
 
 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -73,10 +79,10 @@ config.inter_op_parallelism_threads = 160
 with tf.Session(config=config) as sess:
     train_writer = tf.summary.FileWriter(summaries_dir + '/softmax', sess.graph)
     sess.run(tf.global_variables_initializer())
-    for step in range(80000):
-        # x_data = np.random.rand(256, 2)
-        # y_data = x_data[:,:1] * x_data[:, 1:2]
-        # y_label_data = get_label(y_data, 100)
+    for step in range(800000):
+        x_data = np.random.rand(256, 2)
+        y_data = x_data[:,:1] * x_data[:, 1:2]
+        y_label_data = get_label(y_data, num_clips)
         _, summary = sess.run([train, merged], feed_dict={X: x_data, Y_label: y_label_data, training:True})
         if step % 100 == 0:
             print(step, sess.run([loss, accuracy], feed_dict={X:x_data, Y_label:y_label_data, training:False}), sess.run(accuracy, feed_dict={X:x_test, Y_label:y_label_test, training:False}), x_data.shape[0])
@@ -85,7 +91,7 @@ with tf.Session(config=config) as sess:
 
     x_test = np.random.rand(8192, 2)
     y_test = x_test[:,:1] * x_test[:,1:2]
-    y_label_test = get_label(y_test, 100) 
+    y_label_test = get_label(y_test, num_clips) 
     
-    p, a = sess.run([predict, accuracy], feed_dict={X:x_test, Y_label:y_label_test, training:False})
+    p, a = sess.run([predicts, accuracy], feed_dict={X:x_test, Y_label:y_label_test, training:False})
     print("\nPredict: ", p , "\ny_value", y_test, "\ny_lable", y_label_test, "\nAccuracy: ", a)
