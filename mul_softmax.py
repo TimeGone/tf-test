@@ -52,7 +52,7 @@ predicts = tf.nn.softmax(h2)
 # layer2 = activator(tf.contrib.layers.batch_norm(h2, is_training=training, fused=True))
 # tf.summary.histogram('predicts', predicts)
 
-correct = tf.equal(tf.argmax(predicts), tf.argmax(Y_label))
+correct = tf.equal(tf.argmax(predicts, 1), tf.argmax(Y_label, 1))
 accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32))
 tf.summary.scalar('accuracy', accuracy)
 # loss = tf.reduce_sum(tf.square(tf.subtract(hypothesis, Y)))
