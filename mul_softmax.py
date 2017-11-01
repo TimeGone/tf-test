@@ -8,21 +8,26 @@ def forfan(x):
     return x * tf.nn.tanh(x)
 
 def get_label_index(value, num_classes):
-    indexs = (value * num_classes).astype(int)
+    # indexs = (value * num_classes).astype(int)
+    indexs = (np.log(value/lower_bound) / np.log(1+threshold)).astype(int)
+    # indexs[indexs < 0] = 0
     return indexs[:,0]
 
 def get_label(value, num_classes):
     labels = np.zeros((value.shape[0], num_classes))
-    indexs = (value * num_classes).astype(int)
-    indexs = indexs[:,0]
+    indexs = get_label_index(value, num_classes)
     labels[range(value.shape[0]), indexs] = 1
     return labels
+#   another way: return np.eye(num_classes)[indexs]
 
 summaries_dir = '/tmp/mul_ubuntu'
 
 activator = tf.nn.relu
 optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
-num_clips = 10
+
+lower_bound = 0.01 # for x1 and x2 > 0.1
+threshold = 0.01 # relative bia shoud less than it
+num_clips = int(np.log(1/lower_bound)/np.log(1+threshold)) + 1
 
 # x_data = np.random.rand(5000, 2)
 # y_data = x_data[:,:1] * x_data[:, 1:2]
@@ -31,7 +36,7 @@ num_clips = 10
 # print(y_label_data)
 
 x_test = np.random.rand(8192, 2)
-y_test = x_test[:,:1] * x_test[:,1:2]
+y_test = x_test[:,:1] * x_test[:,1:2] * 0.9 + 0.1
 y_label_test = get_label(y_test, num_clips)
 
 X = tf.placeholder(tf.float32)
@@ -79,9 +84,9 @@ config.inter_op_parallelism_threads = 160
 with tf.Session(config=config) as sess:
     train_writer = tf.summary.FileWriter(summaries_dir + '/softmax', sess.graph)
     sess.run(tf.global_variables_initializer())
-    for step in range(800000):
+    for step in range(8000000):
         x_data = np.random.rand(256, 2)
-        y_data = x_data[:,:1] * x_data[:, 1:2]
+        y_data = x_data[:,:1] * x_data[:, 1:2] * 0.9 + 0.1
         y_label_data = get_label(y_data, num_clips)
         _, summary = sess.run([train, merged], feed_dict={X: x_data, Y_label: y_label_data, training:True})
         if step % 100 == 0:
@@ -90,7 +95,7 @@ with tf.Session(config=config) as sess:
                 train_writer.add_summary(summary, step)
 
     x_test = np.random.rand(8192, 2)
-    y_test = x_test[:,:1] * x_test[:,1:2]
+    y_test = x_test[:,:1] * x_test[:,1:2] * 0.9 + 0.1
     y_label_test = get_label(y_test, num_clips) 
     
     p, a = sess.run([predicts, accuracy], feed_dict={X:x_test, Y_label:y_label_test, training:False})
