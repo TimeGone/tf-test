@@ -17,14 +17,15 @@ def get_label(value, num_classes):
     indexs = get_label_index(value, num_classes)
     labels[range(value.shape[0]), indexs] = 1
     return labels
+#   another way: return np.eye(num_classes)[indexs]
 
 summaries_dir = '/tmp/mul_ubuntu'
 
 activator = tf.nn.tanh
 optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
 
-lower_bound = 0.01
-threshold = 0.01
+lower_bound = 0.01 # for x1 and x2 > 0.1
+threshold = 0.01 # relative bia shoud less than it
 num_clips = int(np.log(1/lower_bound) / np.log(1+threshold)) + 1
 
 X = tf.placeholder(tf.float32)
